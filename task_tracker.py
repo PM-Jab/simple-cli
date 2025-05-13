@@ -1,87 +1,104 @@
 #!/usr/bin/env python3
 
-import argparse
 import json
+import os
+
+TASKS_FILE = "tasks.json"
+
+
+def load_tasks():
+    if os.path.exists(TASKS_FILE):
+        with open(TASKS_FILE, "r") as f:
+            return json.load(f).get("tasks", [])
+    return []
+
+
+def save_tasks(tasks):
+    with open(TASKS_FILE, "w") as f:
+        json.dump({"tasks": tasks}, f, indent=4, sort_keys=True, ensure_ascii=False)
+
+
+def add_task(task):
+    tasks = load_tasks()
+    tasks.append(task)
+    save_tasks(tasks)
+    print(f"✅ Task '{task}' added.")
+
+
+def remove_task(task):
+    tasks = load_tasks()
+    if task in tasks:
+        tasks.remove(task)
+        save_tasks(tasks)
+        print(f"✅ Task '{task}' removed.")
+    else:
+        print(f"❌ Task '{task}' not found.")
+
+
+def list_tasks():
+    tasks = load_tasks()
+    if tasks:
+        print("📋 Tasks:")
+        for idx, task in enumerate(tasks, 1):
+            print(f"{idx}. {task}")
+    else:
+        print("📭 No tasks found.")
+
+
+def show_help():
+    print("""
+Available commands:
+  add <task>      Add a new task
+  remove <task>   Remove an existing task
+  list            List all tasks
+  help            Show this help message
+  exit            Exit the program
+""")
+
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Task Tracker CLI App"
-    )
+    print("🚀 Welcome to the Task Tracker CLI App!")
+    show_help()
 
-    parser.add_argument(
-        "command", 
-        type=str, 
-        help="Command to execute (add, remove, list)"
-    )
-
-    args = parser.parse_args()
-
-    if args.command in ["add", "remove"]:
-        parser.add_argument(
-            "new_task",
-            type=str,
-            help="Task to add/remove"
-        )
-    elif args.command == "list":
-        parser.add_argument(
-            "--list",
-            action="store_true",
-            help="List all tasks"
-        )
-    else:
-        print("Invalid command. Use 'add', 'remove', or 'list'.")
-        return
-    
-    args = parser.parse_args()
-        
-    # switch case for command
-    if args.command == "add":
-        print(f"Task added: {args.new_task}")
+    while True:
         try:
-            with open("tasks.json", "r") as file:
-                tasks = json.load(file)
-                tasks["tasks"].append(args.new_task)
-        except FileNotFoundError:
-            tasks = {"tasks": [args.new_task]}
-        
-        try:
-            with open("tasks.json", "w") as file:
-                json.dump(tasks, file, indent=4, sort_keys=True, ensure_ascii=False)
-            print(f"Task '{args.new_task}' added successfully.")
-        except IOError as e:
-            print(f"Error writing to file: {e}")
+            user_input = input("\n> ").strip()
+            if not user_input:
+                continue
 
-    elif args.command == "remove":
-        print(f"Task removed: {args.new_task}")
-        try:
-            with open("tasks.json", "r") as file:
-                tasks = json.load(file)
-                tasks["tasks"].remove(args.new_task)
-        except FileNotFoundError:
-            print("No tasks found.")
-            return
-        except ValueError:
-            print(f"Task '{args.new_task}' not found.")
-            return
+            parts = user_input.split(maxsplit=1)
+            command = parts[0].lower()
+            argument = parts[1] if len(parts) > 1 else None
 
-        try:
-            with open("tasks.json", "w") as file:
-                json.dump(tasks, file, indent=4, sort_keys=True, ensure_ascii=False)
-            print(f"Task '{args.new_task}' removed successfully.")
-        except IOError as e:
-            print(f"Error writing to file: {e}")
+            if command == "add":
+                if not argument:
+                    print("⚠️  Please provide a task to add.")
+                    continue
+                add_task(argument)
 
-    elif args.command == "list":
-        try:
-            with open("tasks.json", "r") as file:
-                tasks = json.load(file)
-                print(f"Tasks: {tasks['tasks']}")
-        except FileNotFoundError:
-            print("No tasks found.")
-            return
-        except ValueError:
-            print(f"Task '{args.new_task}' not found.")
-            return
+            elif command == "remove":
+                if not argument:
+                    print("⚠️  Please provide a task to remove.")
+                    continue
+                remove_task(argument)
+
+            elif command == "list":
+                list_tasks()
+
+            elif command == "help":
+                show_help()
+
+            elif command == "exit":
+                print("👋 Goodbye!")
+                break
+
+            else:
+                print(f"❓ Unknown command: '{command}' (type 'help' for list of commands)")
+
+        except KeyboardInterrupt:
+            print("\n👋 Exiting Task Tracker. Goodbye!")
+            break
+
 
 if __name__ == "__main__":
     main()
